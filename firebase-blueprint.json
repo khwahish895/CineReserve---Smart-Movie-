@@ -1,0 +1,106 @@
+{
+  "entities": {
+    "Movie": {
+      "title": "Movie",
+      "description": "Details about a movie.",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string" },
+        "poster": { "type": "string" },
+        "trailer": { "type": "string" },
+        "rating": { "type": "number" },
+        "duration": { "type": "string" },
+        "genre": { "type": "string" },
+        "description": { "type": "string" },
+        "status": { "type": "string", "enum": ["now-showing", "coming-soon"] },
+        "releaseDate": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "poster", "status"]
+    },
+    "Theater": {
+      "title": "Theater",
+      "description": "Cinema location details.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "location": { "type": "string" },
+        "address": { "type": "string" }
+      },
+      "required": ["name", "location"]
+    },
+    "Show": {
+      "title": "Show",
+      "description": "A specific movie screening at a theater.",
+      "type": "object",
+      "properties": {
+        "movieId": { "type": "string" },
+        "theaterId": { "type": "string" },
+        "startTime": { "type": "string", "format": "date-time" },
+        "date": { "type": "string" },
+        "prices": {
+          "type": "object",
+          "properties": {
+            "regular": { "type": "number" },
+            "premium": { "type": "number" },
+            "vip": { "type": "number" }
+          }
+        }
+      },
+      "required": ["movieId", "theaterId", "startTime", "prices"]
+    },
+    "Seat": {
+      "title": "Seat",
+      "description": "Status of a specific seat for a show.",
+      "type": "object",
+      "properties": {
+        "showId": { "type": "string" },
+        "row": { "type": "string" },
+        "col": { "type": "number" },
+        "type": { "type": "string", "enum": ["regular", "premium", "vip"] },
+        "status": { "type": "string", "enum": ["available", "locked", "booked"] },
+        "lockedBy": { "type": "string" },
+        "lockExpiresAt": { "type": "string", "format": "date-time" },
+        "userId": { "type": "string" }
+      },
+      "required": ["showId", "row", "col", "type", "status"]
+    },
+    "Booking": {
+      "title": "Booking",
+      "description": "A confirmed ticket booking.",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "showId": { "type": "string" },
+        "seatIds": { "type": "array", "items": { "type": "string" } },
+        "totalAmount": { "type": "number" },
+        "status": { "type": "string", "enum": ["pending", "confirmed", "cancelled"] },
+        "paymentId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "qrCode": { "type": "string" }
+      },
+      "required": ["userId", "showId", "seatIds", "totalAmount", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/movies/{movieId}": {
+      "schema": "Movie",
+      "description": "Public movie collection."
+    },
+    "/theaters/{theaterId}": {
+      "schema": "Theater",
+      "description": "Cinema locations."
+    },
+    "/shows/{showId}": {
+      "schema": "Show",
+      "description": "Show timings."
+    },
+    "/shows/{showId}/seats/{seatId}": {
+      "schema": "Seat",
+      "description": "Real-time seat status for a show."
+    },
+    "/bookings/{bookingId}": {
+      "schema": "Booking",
+      "description": "User bookings."
+    }
+  }
+}

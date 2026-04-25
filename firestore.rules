@@ -1,0 +1,109 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Default Deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 3. Path Variable Hardening
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Movies: Publicly readable, admin writable
+    match /movies/{movieId} {
+      allow read: if true;
+      allow write: if false; // System/Admin managed
+    }
+
+    // Theaters: Publicly readable
+    match /theaters/{theaterId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Shows: Publicly readable
+    match /shows/{showId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // Seats: Subcollection of Shows
+    match /shows/{showId}/seats/{seatId} {
+      allow read: if true;
+      
+      function isValidSeat(data) {
+        return data.keys().hasAll(['showId', 'row', 'col', 'type', 'status'])
+          && data.showId == showId
+          && data.row is string && data.row.size() <= 2
+          && data.col is int
+          && data.status in ['available', 'locked', 'booked'];
+      }
+
+      allow update: if isSignedIn() && (
+        // Action: Lock Seat (Transition from available to locked)
+        (
+          existing().status == 'available' && 
+          incoming().status == 'locked' &&
+          incoming().lockedBy == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'lockedBy', 'lockExpiresAt'])
+        ) ||
+        // Action: Unlock Seat (Own lock or expired)
+        (
+          existing().status == 'locked' &&
+          (existing().lockedBy == request.auth.uid || request.time >= existing().lockExpiresAt) &&
+          incoming().status == 'available' &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'lockedBy', 'lockExpiresAt'])
+        ) ||
+        // Action: Finalize Booking (Managed by system, but here we allow user if lockedBy matches)
+        (
+          existing().status == 'locked' &&
+          existing().lockedBy == request.auth.uid &&
+          incoming().status == 'booked' &&
+          incoming().userId == request.auth.uid &&
+          incoming().diff(existing()).affectedKeys().hasOnly(['status', 'userId', 'lockedBy', 'lockExpiresAt'])
+        )
+      );
+      
+      allow create: if false; // Seats initialized by system
+    }
+
+    // Bookings
+    match /bookings/{bookingId} {
+      function isValidBooking(data) {
+        return data.keys().hasAll(['userId', 'showId', 'seatIds', 'totalAmount', 'status', 'createdAt'])
+          && data.userId == request.auth.uid
+          && data.status in ['pending', 'confirmed', 'cancelled']
+          && data.totalAmount is number
+          && data.createdAt == request.time;
+      }
+
+      allow read: if isOwner(existing().userId);
+      allow create: if isSignedIn() && isValidBooking(incoming());
+      allow update: if isOwner(existing().userId) && 
+        incoming().diff(existing()).affectedKeys().hasOnly(['status', 'paymentId', 'qrCode']);
+    }
+    
+    // Users Private Data (if any)
+    match /users/{userId} {
+      allow read, write: if isOwner(userId);
+    }
+  }
+}

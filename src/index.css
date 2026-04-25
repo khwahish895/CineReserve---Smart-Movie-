@@ -1,0 +1,32 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Outfit", sans-serif;
+
+  --color-brand-primary: #E50914; /* Netflix Red */
+  --color-brand-secondary: #000814; /* Deep Navy */
+  --color-brand-accent: #003566;
+  
+  --radius-xl: 1rem;
+  --radius-2xl: 1.5rem;
+}
+
+@layer base {
+  body {
+    @apply bg-black text-gray-100 font-sans;
+  }
+}
+
+.glass-panel {
+  @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-xl;
+}
+
+.btn-primary {
+  @apply bg-brand-primary hover:bg-red-700 text-white font-semibold py-2 px-6 rounded-lg transition-all active:scale-95;
+}
+
+.movie-card-shadow {
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+}

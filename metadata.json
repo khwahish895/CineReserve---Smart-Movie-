@@ -1,0 +1,6 @@
+{
+  "name": "CineReserve - Smart Movie Booking",
+  "description": "A premium movie ticket booking platform with real-time seat locking, AI-powered recommendations, and Stripe payments.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
